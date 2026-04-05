@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import ExpenseChart from '../components/ExpenseChart'
+import ReceiptScanner from '../components/ReceiptScanner'
 
 function PersonalScreen({ appState, currentUser, updateAppState }) {
   const [budgetInput, setBudgetInput] = useState('')
+  const [showReceiptScanner, setShowReceiptScanner] = useState(false)
   const [expenseForm, setExpenseForm] = useState({
     title: '',
     amount: '',
@@ -71,6 +73,20 @@ function PersonalScreen({ appState, currentUser, updateAppState }) {
     updateAppState({
       expenses: appState.expenses.filter(e => e.id !== expenseId)
     })
+  }
+
+  const handlePersonalScanComplete = (ocrData) => {
+    // Auto-fill form from OCR data
+    const total = ocrData.total || (
+      ocrData.items?.reduce((sum, i) => sum + (parseFloat(i.price) || 0), 0)
+    )
+    setExpenseForm(prev => ({
+      ...prev,
+      title: ocrData.merchant || 'Scanned receipt',
+      amount: total ? parseFloat(total).toFixed(2) : prev.amount,
+      category: 'food',
+    }))
+    setShowReceiptScanner(false)
   }
 
   const categories = [
@@ -163,8 +179,34 @@ function PersonalScreen({ appState, currentUser, updateAppState }) {
               <h2 className="text-xl font-bold text-slate-100">Add New Expense</h2>
               <p className="text-sm text-slate-400 mt-1">Record your spending instantly</p>
             </div>
-            <span className="text-4xl opacity-50">➕</span>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setShowReceiptScanner(prev => !prev)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
+                  showReceiptScanner
+                    ? 'bg-primary/20 text-primary border-primary/30'
+                    : 'bg-slate-800/50 text-slate-400 border-slate-700/50 hover:text-slate-200 hover:border-slate-600'
+                }`}
+              >
+                {showReceiptScanner ? '✕ Close Scanner' : '📸 Scan Receipt'}
+              </button>
+              <span className="text-4xl opacity-50">➕</span>
+            </div>
           </div>
+
+          {/* Receipt Scanner Panel */}
+          {showReceiptScanner && (
+            <div className="mb-6 p-4 bg-slate-800/40 rounded-xl border border-slate-700/50">
+              <p className="text-sm text-slate-400 mb-4">
+                Upload a receipt photo to auto-fill the form below.
+              </p>
+              <ReceiptScanner
+                onScanComplete={handlePersonalScanComplete}
+                onError={() => {}}
+              />
+            </div>
+          )}
           
           <form onSubmit={handleAddExpense} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

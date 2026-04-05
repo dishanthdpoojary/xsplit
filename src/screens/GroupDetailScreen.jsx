@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import PendingRequestsList from '../components/PendingRequestsList'
 import MembersList from '../components/MembersList'
+import ReceiptScanner from '../components/ReceiptScanner'
 
 function GroupDetailScreen({ appState, currentUser, updateAppState, showToast, onAcceptRequest, onRejectRequest, onRemoveMember, onBack }) {
   const group = appState.groups.find(g => g.id === appState.currentGroupId)
@@ -13,6 +14,8 @@ function GroupDetailScreen({ appState, currentUser, updateAppState, showToast, o
   const [items, setItems] = useState([])
   const [newItem, setNewItem] = useState({ name: '', price: '' })
   const [showItemsTable, setShowItemsTable] = useState(false)
+  const [scanError, setScanError] = useState('')
+  const [scanMerchant, setScanMerchant] = useState('')
 
   if (!group) return null
 
@@ -58,17 +61,26 @@ function GroupDetailScreen({ appState, currentUser, updateAppState, showToast, o
     }
   }
 
-  const handleSimulateOCR = (e) => {
-    const simulatedItems = [
-      { name: 'Masala Dosa', price: 120 },
-      { name: 'Idli (2pcs)', price: 60 },
-      { name: 'Coffee', price: 40 },
-      { name: 'Sambar', price: 20 },
-      { name: 'Chutney', price: 15 }
-    ]
+  const handleScanComplete = (ocrData) => {
+    setScanError('')
+    setScanMerchant(ocrData.merchant || '')
 
-    setItems(simulatedItems)
-    setShowItemsTable(true)
+    // Map OCR items (price as string) to our format
+    const parsed = (ocrData.items || []).map(i => ({
+      name: i.item || i.name || 'Unknown item',
+      price: parseFloat(i.price) || 0
+    })).filter(i => i.price > 0)
+
+    // If no items but total present, create a single entry from the merchant
+    if (parsed.length === 0 && ocrData.total) {
+      parsed.push({
+        name: ocrData.merchant || 'Receipt total',
+        price: parseFloat(ocrData.total) || 0
+      })
+    }
+
+    setItems(parsed)
+    setShowItemsTable(parsed.length > 0)
   }
 
   const handleAddItem = () => {
@@ -84,9 +96,19 @@ function GroupDetailScreen({ appState, currentUser, updateAppState, showToast, o
 
   const handleFinalizeItemSplit = () => {
     const totalAmount = items.reduce((sum, item) => sum + parseFloat(item.price), 0)
-    showToast(`Bill split finalized! Total: ₹${totalAmount.toFixed(2)}`, 'success')
+    if (totalAmount <= 0) return
+
+    // Pre-fill the expense form then switch to the expenses tab
+    setExpenseForm({
+      title: scanMerchant ? `${scanMerchant} (receipt)` : 'Scanned receipt',
+      amount: totalAmount.toFixed(2),
+      paidBy: currentUser.email
+    })
     setItems([])
     setShowItemsTable(false)
+    setScanMerchant('')
+    setActiveTab('expenses')
+    showToast(`Receipt scanned! ₹${totalAmount.toFixed(2)} auto-filled — review and submit.`, 'success')
   }
 
   const groupBalance = useMemo(() => {
@@ -298,25 +320,32 @@ function GroupDetailScreen({ appState, currentUser, updateAppState, showToast, o
             <div className="card-elevated">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-100">Upload Receipt</h2>
-                  <p className="text-sm text-slate-400 mt-1">Snap a photo to extract items and prices</p>
+                  <h2 className="text-xl font-bold text-slate-100">Scan Receipt</h2>
+                  <p className="text-sm text-slate-400 mt-1">Upload a photo to auto-extract items and prices</p>
                 </div>
                 <span className="text-4xl opacity-50">📸</span>
               </div>
-              
-              <div 
-                className="upload-area group"
-                onClick={handleSimulateOCR}
-              >
-                <div className="text-6xl mb-4 group-hover:scale-110 transition-transform">📸</div>
-                <div className="font-semibold text-slate-100 mb-2">Upload Receipt Image</div>
-                <div className="text-slate-400 text-sm">Click to simulate OCR processing</div>
-              </div>
+
+              <ReceiptScanner
+                onScanComplete={handleScanComplete}
+                onError={(msg) => setScanError(msg)}
+              />
+
+              {scanError && (
+                <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+                  {scanError}
+                </div>
+              )}
             </div>
 
             {/* Items Table */}
             {showItemsTable && (
               <div className="card-elevated">
+                {scanMerchant && (
+                  <div className="mb-4 px-4 py-2 rounded-lg bg-primary/10 border border-primary/20 text-primary text-sm font-medium">
+                    🏪 Merchant detected: <strong>{scanMerchant}</strong>
+                  </div>
+                )}
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h2 className="text-xl font-bold text-slate-100">Bill Items</h2>
