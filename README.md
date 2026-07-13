@@ -124,6 +124,3 @@ xsplit/
 - Any authenticated user can read or create groups.
 - Only the group leader (`leaderId`) can update or delete a group.
 
-## License
-
-MIT
