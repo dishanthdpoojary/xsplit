@@ -1,198 +1,126 @@
-# XSplit - Expense Sharing & Personal Finance Management App
+# XSplit — Expense Splitting App
 
-A modern, clean web application built with **React.js** and **Tailwind CSS** for managing personal expenses and splitting group expenses.
+XSplit is a React web application for tracking and splitting expenses — both personally and within groups. It supports receipt scanning via OCR, real-time charts, invite-link-based group joining, and smart debt simplification.
 
-## 🚀 Features
+## Features
 
-### Authentication
-- Login and Signup with email/password
-- Clean, minimal authentication screen
-- Session-based user management
+- **Authentication** — Sign up and log in with Firebase Authentication.
+- **Personal Expense Tracking** — Log personal expenses by category, set a monthly budget, and visualise spending with charts.
+- **Group Expense Splitting** — Create groups, add shared expenses, and split costs evenly among members.
+- **Debt Simplification** — Automatically minimises the number of transactions needed to settle all balances within a group.
+- **Receipt Scanning** — Upload or drag-and-drop a receipt image; Tesseract OCR extracts the merchant name, line items, and total.
+- **Invite Links** — Share a unique invite link so others can request to join your group; group leaders approve or reject requests.
+- **Member Management** — Leaders can remove members and manage pending join requests.
 
-### Personal Expense Tracker
-- Track daily expenses with title, amount, and category
-- Set monthly budget with real-time tracking
-- Budget alert system (warns when exceeded)
-- Interactive pie chart showing spending by category
-- Filter and view expense history
+## Tech Stack
 
-### Group Expense Management
-- Create groups and invite members
-- Add group expenses that auto-split
-- Simulated receipt upload with OCR extraction
-- Interactive item assignment to group members
-- Bill finalization with automatic calculations
+| Layer | Technology |
+|---|---|
+| UI | React 18, Tailwind CSS |
+| Build | Vite |
+| Backend / DB | Firebase (Firestore, Auth) |
+| Charts | Chart.js, react-chartjs-2 |
+| OCR | Tesseract (via local OCR server) |
 
-### Balance & Settlement
-- View who owes whom
-- Settlement screen with clear debt tracking
-- Member avatars and quick identification
-- Transaction history
+## Getting Started
 
-## 💻 Tech Stack
+### Prerequisites
 
-- **React 18.2** - Modern UI library
-- **Tailwind CSS** - Utility-first CSS framework
-- **Vite** - Lightning-fast build tool
-- **Chart.js** - Data visualization
-- **PostCSS** - CSS processing
+- Node.js ≥ 18
+- A Firebase project with **Firestore** and **Authentication** (Email/Password) enabled
 
-## 📋 Requirements
+### Installation
 
-- Node.js 14 or higher
-- npm or yarn
-
-## 🔧 Installation
-
-1. **Clone or navigate to the project:**
 ```bash
+git clone https://github.com/dishanthdpoojary/xsplit.git
 cd xsplit
-```
-
-2. **Install dependencies:**
-```bash
 npm install
 ```
 
-3. **Start the development server:**
-```bash
-npm run dev
-```
+### Firebase Configuration
 
-This will start the Vite dev server, usually at `http://localhost:5173`
-
-## 🏗️ Project Structure
-
-```
-src/
-├── App.jsx                 # Main app component
-├── main.jsx               # Entry point
-├── index.css              # Tailwind CSS config & global styles
-├── components/
-│   ├── Navbar.jsx         # Navigation bar
-│   └── ExpenseChart.jsx   # Chart visualization
-└── screens/
-    ├── AuthScreen.jsx              # Login/Signup
-    ├── DashboardScreen.jsx         # Overview
-    ├── PersonalScreen.jsx          # Personal expenses
-    ├── GroupsScreen.jsx            # Group management
-    └── GroupDetailScreen.jsx       # Group details & bill splitting
-```
-
-## 🎨 Design Highlights
-
-- **Color Scheme**: Primary Green (#10b981), Secondary Cyan (#06b6d4), Accent Gold (#f59e0b)
-- **Dark Theme**: Modern dark background with gradient
-- **Responsive Design**: Mobile-first approach, works on all devices
-- **Smooth Animations**: Fade-in effects and hover interactions
-- **Clean Cards**: Rounded corners with border effects
-- **Icons & Emojis**: Visual indicators for better UX
-
-## 📱 Available Scripts
+1. Go to your [Firebase Console](https://console.firebase.google.com/) and create a project.
+2. Copy your Firebase web app config.
+3. Update `src/firebase/firebase.js` with your project credentials.
+4. Deploy the Firestore security rules from `firestore.rules`:
 
 ```bash
-# Development server
+firebase deploy --only firestore:rules
+```
+
+### Running the App
+
+```bash
+# Start the development server
 npm run dev
 
 # Build for production
 npm run build
 
-# Preview production build
+# Preview the production build locally
 npm run preview
 ```
 
-## 🎯 Usage Guide
+The app will be available at `http://localhost:5173` by default.
 
-### 1. **Authentication**
-   - Sign up with email and password
-   - Or sign in if you already have an account
-   - All data is stored in browser session
+### OCR Server (optional)
 
-### 2. **Personal Expenses**
-   - Navigate to "Personal" tab
-   - Set monthly budget
-   - Add expenses with category
-   - View spending chart and alerts
-   - Track budget vs actual spending
+Receipt scanning requires a local OCR server running at `http://localhost:3000`. Without it the receipt scanner will display an error, but all other features work normally.
 
-### 3. **Group Expenses**
-   - Click "Groups" to view all groups
-   - Create a new group with members
-   - Copy and share invite links
-   - Add expenses to group
-   - Upload receipts and split items
+## Project Structure
 
-### 4. **Bill Splitting**
-   - Upload receipt image (simulated OCR)
-   - View & edit extracted items
-   - Assign items to specific members
-   - Finalize split for automatic calculations
+```
+xsplit/
+├── src/
+│   ├── components/       # Reusable UI components
+│   │   ├── CreateGroupForm.jsx
+│   │   ├── ExpenseChart.jsx
+│   │   ├── InviteLinkCard.jsx
+│   │   ├── JoinRequestPage.jsx
+│   │   ├── MembersList.jsx
+│   │   ├── Navbar.jsx
+│   │   ├── PendingRequestsList.jsx
+│   │   ├── ProtectedRoute.jsx
+│   │   ├── ReceiptScanner.jsx
+│   │   └── Toast.jsx
+│   ├── context/
+│   │   └── AuthContext.jsx   # Firebase auth state provider
+│   ├── firebase/
+│   │   └── firebase.js       # Firebase app initialisation
+│   ├── screens/              # Top-level page components
+│   │   ├── AuthScreen.jsx
+│   │   ├── DashboardScreen.jsx
+│   │   ├── GroupDetailScreen.jsx
+│   │   ├── GroupsScreen.jsx
+│   │   └── PersonalScreen.jsx
+│   ├── services/
+│   │   ├── authService.js    # Auth helpers (login, logout, register)
+│   │   └── ocrService.js     # Receipt OCR API calls
+│   └── utils/
+│       └── uuid.js
+├── backend/
+│   ├── services/
+│   │   ├── authService.js
+│   │   ├── expenseService.js
+│   │   └── groupService.js
+│   └── utils/
+│       ├── generateToken.js  # Invite token generation
+│       └── splitLogic.js     # Balance calculation & debt simplification
+├── firestore.rules
+├── tailwind.config.js
+└── vite.config.js
+```
 
-### 5. **Settlement**
-   - View balance details for each group
-   - See who owes whom
-   - Track transactions
-   - Mark settlements as complete
+## Debt Simplification Algorithm
 
-## 🌐 Browser Support
+`backend/utils/splitLogic.js` implements two functions:
 
-- Chrome/Edge 90+
-- Firefox 88+
-- Safari 14+
-- Mobile browsers
+- **`calculateBalances(expenses, members)`** — Computes each member's net balance (positive = should receive money, negative = owes money).
+- **`simplifyDebts(balances)`** — Uses a greedy creditor–debtor matching algorithm to produce the minimum number of transactions needed to settle all debts.
 
-## 🔐 Data Privacy
+## Firestore Security Rules
 
-- All data is stored in browser's local state
-- No backend server required
-- Data resets on logout or page refresh
-- Perfect for testing and demo purposes
+- Users can only read/write their own user document.
+- Any authenticated user can read or create groups.
+- Only the group leader (`leaderId`) can update or delete a group.
 
-## 📚 Component API
-
-### App
-Main container managing app state and navigation
-
-### AuthScreen
-Handles user authentication (login/signup)
-
-### DashboardScreen
-Shows overview of all expenses and balances
-
-### PersonalScreen
-Personal expense management with charts
-
-### GroupsScreen
-Create and manage expense groups
-
-### GroupDetailScreen
-Group expenses, bill splitting, and settlement
-
-## 🎓 Future Enhancements
-
-- [ ] Backend integration with database
-- [ ] Real receipt OCR using API
-- [ ] Push notifications for settlements
-- [ ] Email sharing of expense reports
-- [ ] Mobile app version
-- [ ] Export expense reports as PDF
-- [ ] Recurring expenses
-- [ ] Expense categories analytics
-- [ ] Multi-currency support
-- [ ] Payment gateway integration
-
-## 🤝 Contributing
-
-Feel free to customize and extend this application!
-
-## 📄 License
-
-MIT License - feel free to use this for personal or commercial projects.
-
-## 👨‍💻 Author
-
-Created as a modern expense sharing solution.
-
----
-
-**Happy budgeting! 💰**

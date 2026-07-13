@@ -8,18 +8,24 @@ import { auth, db } from '../firebase/firebase';
 
 export const signUp = async (name, email, password) => {
   try {
+    if (!name || !email || !password) {
+      throw new Error('Name, email and password are required.');
+    }
+
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
     // Create user document in Firestore
-    await setDoc(doc(db, 'users', user.uid), {
+    const userData = {
       userId: user.uid,
-      name,
-      email,
+      name: name.trim(),
+      email: email.toLowerCase(),
       createdAt: new Date().toISOString()
-    });
+    };
+    
+    await setDoc(doc(db, 'users', user.uid), userData);
 
-    return { user, name };
+    return userData;
   } catch (error) {
     throw error;
   }
@@ -27,8 +33,20 @@ export const signUp = async (name, email, password) => {
 
 export const login = async (email, password) => {
   try {
+    if (!email || !password) {
+      throw new Error('Email and password are required.');
+    }
+    
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    return userCredential.user;
+    
+    // Fetch extended profile from Firestore
+    const profile = await getCurrentUser(userCredential.user.uid);
+    
+    return profile ?? {
+      userId: userCredential.user.uid,
+      email: userCredential.user.email,
+      name: userCredential.user.email.split('@')[0],
+    };
   } catch (error) {
     throw error;
   }

@@ -28,24 +28,31 @@ function App() {
   useEffect(() => {
     if (loading) return; // Wait for initial auth check
 
-    if (currentUser && currentScreen === 'auth') {
+    if (currentUser && currentScreen === 'auth' && !joinGroupData) {
       setCurrentScreen('dashboard')
     } else if (!currentUser && currentScreen !== 'auth' && currentScreen !== 'join-group') {
       setCurrentScreen('auth')
     }
-  }, [currentUser, currentScreen, loading])
+  }, [currentUser, currentScreen, loading, joinGroupData])
 
-  // Check for join group link in URL on mount
+  // Parse join-group URL immediately on mount (before auth resolves)
   useEffect(() => {
     const path = window.location.pathname
-    const joinMatch = path.match(/\/join-group\/(\d+)\/([a-f0-9-]+)/)
-    if (joinMatch && currentUser) {
+    const joinMatch = path.match(/\/join-group\/([^/]+)\/([a-zA-Z0-9-]+)/)
+    if (joinMatch) {
       const groupId = parseInt(joinMatch[1])
       const inviteToken = joinMatch[2]
       setJoinGroupData({ groupId, inviteToken })
+    }
+  }, []) // runs once on mount
+
+  // Once auth resolves, activate join-group screen if we detected a link
+  useEffect(() => {
+    if (loading) return
+    if (joinGroupData && currentUser) {
       setCurrentScreen('join-group')
     }
-  }, [currentUser])
+  }, [currentUser, joinGroupData, loading])
 
   const handleLogout = async () => {
     if (confirm('Are you sure you want to logout?')) {

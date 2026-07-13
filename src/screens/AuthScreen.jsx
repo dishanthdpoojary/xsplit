@@ -10,6 +10,39 @@ function AuthScreen() {
   const [error, setError] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
 
+  // Wraps a promise with a timeout so the button never hangs forever
+  const withTimeout = (promise, ms = 15000) =>
+    Promise.race([
+      promise,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Request timed out. Check your internet connection and try again.')), ms)
+      ),
+    ])
+
+  const getFriendlyError = (err) => {
+    switch (err.code) {
+      case 'auth/invalid-credential':
+      case 'auth/wrong-password':
+        return 'Incorrect email or password.'
+      case 'auth/user-not-found':
+        return 'No account found with this email. Please sign up first.'
+      case 'auth/email-already-in-use':
+        return 'An account with this email already exists. Try logging in.'
+      case 'auth/weak-password':
+        return 'Password must be at least 6 characters.'
+      case 'auth/invalid-email':
+        return 'Please enter a valid email address.'
+      case 'auth/too-many-requests':
+        return 'Too many failed attempts. Please wait a minute and try again.'
+      case 'auth/operation-not-allowed':
+        return 'Email/Password sign-in is not enabled. Please enable it in your Firebase Console → Authentication → Sign-in methods.'
+      case 'auth/network-request-failed':
+        return 'Network error. Check your internet connection.'
+      default:
+        return err.message || 'Authentication failed. Please try again.'
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError(null)
@@ -21,26 +54,20 @@ function AuthScreen() {
 
     if (isSignup && !name.trim()) {
       setError('Name is required for signup')
-      return;
+      return
     }
 
     try {
       setIsLoading(true)
       if (isSignup) {
-        await signUp(name, email, password)
+        await withTimeout(signUp(name, email, password))
       } else {
-        await login(email, password)
+        await withTimeout(login(email, password))
       }
-      // Note: No need to call onLogin, as AuthContext will automatically redirect!
+      // AuthContext's onAuthStateChanged will automatically redirect on success
     } catch (err) {
-      console.error(err)
-      if (err.code === 'auth/invalid-credential') {
-        setError('Invalid credentials.')
-      } else if (err.code === 'auth/user-not-found') {
-        setError('User not found.')
-      } else {
-        setError(err.message || 'Authentication error')
-      }
+      console.error('[Auth Error]', err)
+      setError(getFriendlyError(err))
     } finally {
       setIsLoading(false)
     }
